@@ -33,6 +33,15 @@ const users = [
     phone: '+1234567892',
     isActive: true,
   },
+
+    {
+    name: ' Admin User2 ',
+    email: 'admin2@example.com',
+    password: 'password123',
+    role: 'admin',
+    phone: '+1234567890',
+    isActive: true,
+  },
 ];
 
 const seedUsers = async () => {

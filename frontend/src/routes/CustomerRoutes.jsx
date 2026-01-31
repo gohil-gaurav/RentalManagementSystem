@@ -6,23 +6,29 @@ import ProductDetail from '../pages/customer/ProductDetail';
 import Cart from '../pages/customer/Cart';
 import Checkout from '../pages/customer/Checkout';
 import MyOrders from '../pages/customer/MyOrders';
+import CustomerDashboard from '../pages/customer/Dashboard';
+import Invoices from '../pages/customer/Invoices';
 
 // Placeholder components
-const OrderDetail = () => <div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold">Order Details</h1></div>;
-const Profile = () => <div className="max-w-7xl mx-auto px-4 py-8"><h1 className="text-2xl font-bold">My Profile</h1></div>;
+const OrderDetail = () => <div className="space-y-6"><div className="bg-white border border-gray-200 rounded-lg p-6"><h1 className="text-xl font-semibold text-gray-900">Order Details</h1><p className="text-sm text-gray-500 mt-1">Order information will be displayed here</p></div></div>;
+const Profile = () => <div className="space-y-6"><div className="bg-white border border-gray-200 rounded-lg p-6"><h1 className="text-xl font-semibold text-gray-900">My Profile</h1><p className="text-sm text-gray-500 mt-1">Profile settings will be displayed here</p></div></div>;
+const Settings = () => <div className="space-y-6"><div className="bg-white border border-gray-200 rounded-lg p-6"><h1 className="text-xl font-semibold text-gray-900">Settings</h1><p className="text-sm text-gray-500 mt-1">Account settings will be displayed here</p></div></div>;
 
 const CustomerRoutes = () => {
   return (
     <Routes>
       <Route element={<CustomerLayout />}>
         <Route index element={<Home />} />
+        <Route path="dashboard" element={<CustomerDashboard />} />
         <Route path="products" element={<Products />} />
         <Route path="products/:id" element={<ProductDetail />} />
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />
         <Route path="orders" element={<MyOrders />} />
         <Route path="orders/:id" element={<OrderDetail />} />
+        <Route path="invoices" element={<Invoices />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Home />} />
       </Route>
     </Routes>

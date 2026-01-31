@@ -8,6 +8,7 @@ import { getMe } from './slices/authSlice';
 import { ProtectedRoute, AdminRoutes, VendorRoutes, CustomerRoutes } from './routes';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import LandingPage from './pages/LandingPage';
 
 function App() {
   const dispatch = useDispatch();
@@ -50,7 +51,7 @@ function App() {
                       ? '/admin/dashboard'
                       : user?.role === 'vendor'
                       ? '/vendor/dashboard'
-                      : '/'
+                      : '/customer/dashboard'
                   }
                   replace
                 />
@@ -69,7 +70,7 @@ function App() {
                       ? '/admin/dashboard'
                       : user?.role === 'vendor'
                       ? '/vendor/dashboard'
-                      : '/'
+                      : '/customer/dashboard'
                   }
                   replace
                 />
@@ -90,7 +91,13 @@ function App() {
           </Route>
 
           {/* Customer Routes (accessible to all authenticated users and guests) */}
-          <Route path="/*" element={<CustomerRoutes />} />
+          <Route path="/customer/*" element={<CustomerRoutes />} />
+          
+          {/* Landing Page */}
+          <Route path="/" element={<LandingPage />} />
+          
+          {/* Fallback redirect */}
+          <Route path="/*" element={<Navigate to="/" replace />} />
         </Routes>
 
         {/* Toast Notifications */}

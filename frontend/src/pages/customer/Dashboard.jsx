@@ -1,24 +1,24 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { getAllOrders, getOrderStats } from '../../slices/orderSlice';
+import { getMyOrders } from '../../slices/orderSlice';
+import { getProducts } from '../../slices/productSlice';
 import {
-  FiUsers,
   FiPackage,
-  FiShoppingCart,
-  FiDollarSign,
-  FiTrendingUp,
+  FiCalendar,
+  FiClock,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiTruck,
+  FiFileText,
   FiArrowRight,
   FiChevronRight,
   FiRefreshCw,
+  FiShoppingBag,
   FiAlertTriangle,
   FiEye,
-  FiSettings,
-  FiBarChart2,
-  FiFileText,
-  FiCheckCircle,
-  FiClock,
-  FiAlertCircle,
+  FiTrendingUp,
+  FiGrid,
 } from 'react-icons/fi';
 
 // ============================================
@@ -87,6 +87,8 @@ const statusConfig = {
   completed: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
   cancelled: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
   overdue: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+  unpaid: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200' },
+  paid: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200' },
 };
 
 const StatusBadge = ({ status }) => {
@@ -106,59 +108,65 @@ const dummyOrders = [
   {
     _id: 'ORD-2026-001',
     orderNumber: 'ORD-2026-001',
-    customer: { name: 'John Smith', email: 'john@example.com' },
     items: [{ product: { name: 'Sony Alpha a7 III' }, quantity: 1 }],
-    pricing: { total: 7500 },
+    totalAmount: 7500,
     status: 'active',
+    rentalPeriod: { startDate: '2026-01-28', endDate: '2026-02-03' },
     createdAt: '2026-01-28T10:30:00Z',
   },
   {
     _id: 'ORD-2026-002',
     orderNumber: 'ORD-2026-002',
-    customer: { name: 'Sarah Johnson', email: 'sarah@example.com' },
-    items: [{ product: { name: 'DJI Mavic 3 Pro' }, quantity: 1 }],
-    pricing: { total: 15600 },
-    status: 'pending',
-    createdAt: '2026-01-30T14:20:00Z',
+    items: [{ product: { name: 'DJI Mavic 3 Pro' }, quantity: 1 }, { product: { name: 'DJI RS 3 Pro Gimbal' }, quantity: 1 }],
+    totalAmount: 15600,
+    status: 'picked-up',
+    rentalPeriod: { startDate: '2026-01-25', endDate: '2026-01-31' },
+    createdAt: '2026-01-24T14:20:00Z',
   },
   {
     _id: 'ORD-2026-003',
     orderNumber: 'ORD-2026-003',
-    customer: { name: 'Mike Chen', email: 'mike@example.com' },
     items: [{ product: { name: 'Canon EOS R5' }, quantity: 1 }],
-    pricing: { total: 10500 },
-    status: 'completed',
-    createdAt: '2026-01-25T09:15:00Z',
+    totalAmount: 10500,
+    status: 'pending',
+    rentalPeriod: { startDate: '2026-02-01', endDate: '2026-02-07' },
+    createdAt: '2026-01-30T09:15:00Z',
   },
   {
-    _id: 'ORD-2026-004',
-    orderNumber: 'ORD-2026-004',
-    customer: { name: 'Emily Davis', email: 'emily@example.com' },
+    _id: 'ORD-2025-089',
+    orderNumber: 'ORD-2025-089',
     items: [{ product: { name: 'MacBook Pro 16"' }, quantity: 2 }],
-    pricing: { total: 24000 },
-    status: 'picked-up',
-    createdAt: '2026-01-29T11:00:00Z',
+    totalAmount: 24000,
+    status: 'completed',
+    rentalPeriod: { startDate: '2025-12-15', endDate: '2025-12-25' },
+    createdAt: '2025-12-14T11:00:00Z',
   },
   {
-    _id: 'ORD-2026-005',
-    orderNumber: 'ORD-2026-005',
-    customer: { name: 'David Wilson', email: 'david@example.com' },
+    _id: 'ORD-2025-078',
+    orderNumber: 'ORD-2025-078',
     items: [{ product: { name: 'GoPro Hero 12 Black' }, quantity: 3 }],
-    pricing: { total: 7200 },
-    status: 'confirmed',
-    createdAt: '2026-01-31T08:45:00Z',
+    totalAmount: 7200,
+    status: 'completed',
+    rentalPeriod: { startDate: '2025-11-20', endDate: '2025-11-27' },
+    createdAt: '2025-11-19T16:45:00Z',
   },
 ];
 
-const dummyVendorRequests = [
-  { _id: '1', name: 'Tech Rentals Inc', email: 'tech@rentals.com', submittedAt: '2026-01-30' },
-  { _id: '2', name: 'Camera Pro Shop', email: 'info@camerapro.com', submittedAt: '2026-01-29' },
+const dummyInvoices = [
+  { _id: 'INV-2026-001', invoiceNumber: 'INV-2026-001', amount: 7500, status: 'unpaid', dueDate: '2026-02-05', order: 'ORD-2026-001' },
+  { _id: 'INV-2026-002', invoiceNumber: 'INV-2026-002', amount: 15600, status: 'paid', dueDate: '2026-01-30', order: 'ORD-2026-002' },
+  { _id: 'INV-2025-089', invoiceNumber: 'INV-2025-089', amount: 24000, status: 'paid', dueDate: '2025-12-20', order: 'ORD-2025-089' },
+];
+
+const dummyUpcomingReturns = [
+  { orderId: 'ORD-2026-002', product: 'DJI Mavic 3 Pro + Gimbal', returnDate: '2026-01-31', daysLeft: 0 },
+  { orderId: 'ORD-2026-001', product: 'Sony Alpha a7 III', returnDate: '2026-02-03', daysLeft: 3 },
 ];
 
 // ============================================
 // KPI CARD COMPONENT
 // ============================================
-const KPICard = ({ title, value, subtitle, icon: Icon, iconBg = 'bg-gray-100', iconColor = 'text-gray-600', trend, trendUp, href }) => {
+const KPICard = ({ title, value, subtitle, icon: Icon, iconBg = 'bg-gray-100', iconColor = 'text-gray-600', href }) => {
   const content = (
     <div className="bg-white border border-gray-200 rounded-lg p-5 hover:border-gray-300 transition-colors">
       <div className="flex items-start justify-between">
@@ -167,15 +175,6 @@ const KPICard = ({ title, value, subtitle, icon: Icon, iconBg = 'bg-gray-100', i
           <p className="text-2xl font-semibold text-gray-900 tracking-tight">{value}</p>
           {subtitle && (
             <p className="text-xs text-gray-500">{subtitle}</p>
-          )}
-          {trend && (
-            <div className="flex items-center gap-1 pt-1">
-              <FiTrendingUp className={`w-3 h-3 ${trendUp ? 'text-emerald-500' : 'text-red-500'}`} />
-              <span className={`text-xs font-medium ${trendUp ? 'text-emerald-600' : 'text-red-600'}`}>
-                {trend}
-              </span>
-              <span className="text-xs text-gray-400">vs last month</span>
-            </div>
           )}
         </div>
         <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
@@ -204,22 +203,22 @@ const SectionHeader = ({ title, subtitle }) => (
 // ============================================
 // MAIN DASHBOARD COMPONENT
 // ============================================
-const AdminDashboard = () => {
+const CustomerDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { orders: apiOrders, stats, isLoading: ordersLoading } = useSelector((state) => state.orders);
+  const { orders: apiOrders, isLoading: ordersLoading } = useSelector((state) => state.orders);
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
 
   // Use dummy data or API data
   const orders = apiOrders?.length > 0 ? apiOrders : dummyOrders;
-  const vendorRequests = dummyVendorRequests;
+  const invoices = dummyInvoices;
+  const upcomingReturns = dummyUpcomingReturns;
 
   useEffect(() => {
-    dispatch(getAllOrders({ limit: 10 }));
-    dispatch(getOrderStats());
+    dispatch(getMyOrders());
     // Simulate loading for demo
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
@@ -227,27 +226,29 @@ const AdminDashboard = () => {
 
   // Calculate KPIs
   const kpis = useMemo(() => {
-    const totalRevenue = stats?.totalRevenue || orders.reduce((sum, o) => sum + (o.pricing?.total || 0), 0);
-    const totalOrders = stats?.totalOrders || orders.length;
-    const activeRentals = stats?.byStatus?.find((s) => s._id === 'active')?.count || orders.filter(o => o.status === 'active').length;
-    const pendingOrders = orders.filter(o => o.status === 'pending').length;
+    const activeRentals = orders.filter(o => ['active', 'picked-up'].includes(o.status)).length;
+    const pendingOrders = orders.filter(o => ['pending', 'confirmed', 'ready-for-pickup'].includes(o.status)).length;
+    const completedRentals = orders.filter(o => o.status === 'completed').length;
+    const unpaidInvoices = invoices.filter(i => i.status === 'unpaid');
+    const totalUnpaid = unpaidInvoices.reduce((sum, i) => sum + i.amount, 0);
+    const totalSpent = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + o.totalAmount, 0);
 
     return {
-      totalRevenue,
-      totalOrders,
       activeRentals,
       pendingOrders,
-      totalUsers: 1234,
-      totalVendors: 156,
-      pendingVendors: vendorRequests.length,
+      completedRentals,
+      unpaidCount: unpaidInvoices.length,
+      totalUnpaid,
+      totalSpent,
+      returnsToday: upcomingReturns.filter(r => r.daysLeft === 0).length,
     };
-  }, [orders, stats, vendorRequests]);
+  }, [orders, invoices, upcomingReturns]);
 
   // Filter orders by tab
   const filteredOrders = useMemo(() => {
     if (activeTab === 'all') return orders.slice(0, 5);
-    if (activeTab === 'active') return orders.filter(o => o.status === 'active');
-    if (activeTab === 'pending') return orders.filter(o => o.status === 'pending');
+    if (activeTab === 'active') return orders.filter(o => ['active', 'picked-up'].includes(o.status));
+    if (activeTab === 'pending') return orders.filter(o => ['pending', 'confirmed', 'ready-for-pickup'].includes(o.status));
     if (activeTab === 'completed') return orders.filter(o => o.status === 'completed');
     return orders;
   }, [orders, activeTab]);
@@ -267,6 +268,13 @@ const AdminDashboard = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const getProductSummary = (items) => {
+    if (!items || items.length === 0) return 'No items';
+    const firstItem = items[0]?.product?.name || 'Unknown Item';
+    if (items.length === 1) return firstItem;
+    return `${firstItem} +${items.length - 1} more`;
   };
 
   // Loading state with skeleton
@@ -324,10 +332,10 @@ const AdminDashboard = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">
-                Admin Dashboard
+                Welcome back, {user?.name?.split(' ')[0] || 'Customer'}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Overview of your rental platform
+                Here's an overview of your rental activity
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -339,34 +347,34 @@ const AdminDashboard = () => {
                 <span className="hidden sm:inline">Refresh</span>
               </button>
               <Link
-                to="/admin/analytics"
+                to="/customer/products"
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
               >
-                <FiBarChart2 className="w-4 h-4" />
-                View Analytics
+                <FiShoppingBag className="w-4 h-4" />
+                Browse Catalog
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Alert Banner - Pending Vendor Requests */}
-        {kpis.pendingVendors > 0 && (
+        {/* Alert Banner - Upcoming Returns */}
+        {kpis.returnsToday > 0 && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-start gap-3">
               <FiAlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-amber-800">
-                  {kpis.pendingVendors} vendor request{kpis.pendingVendors > 1 ? 's' : ''} pending approval
+                  {kpis.returnsToday} rental{kpis.returnsToday > 1 ? 's' : ''} due for return today
                 </p>
                 <p className="text-sm text-amber-700 mt-1">
-                  Review and approve vendor applications to expand your marketplace.
+                  Please ensure timely return to avoid late fees.
                 </p>
               </div>
               <Link
-                to="/admin/users"
+                to="/customer/orders"
                 className="text-sm font-medium text-amber-700 hover:text-amber-800 whitespace-nowrap flex-shrink-0"
               >
-                Review Now →
+                View Details →
               </Link>
             </div>
           </div>
@@ -375,40 +383,39 @@ const AdminDashboard = () => {
         {/* KPI Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <KPICard
-            title="Total Revenue"
-            value={formatCurrency(kpis.totalRevenue)}
-            trend="+12.5%"
-            trendUp={true}
-            icon={FiDollarSign}
-            iconBg="bg-emerald-50"
-            iconColor="text-emerald-600"
-          />
-          <KPICard
-            title="Total Orders"
-            value={kpis.totalOrders}
-            trend="+8.2%"
-            trendUp={true}
-            icon={FiShoppingCart}
-            iconBg="bg-blue-50"
-            iconColor="text-blue-600"
-            href="/admin/orders"
-          />
-          <KPICard
             title="Active Rentals"
             value={kpis.activeRentals}
-            subtitle="Currently rented out"
+            subtitle="Currently rented items"
             icon={FiPackage}
-            iconBg="bg-violet-50"
-            iconColor="text-violet-600"
+            iconBg="bg-emerald-50"
+            iconColor="text-emerald-600"
+            href="/customer/orders?status=active"
           />
           <KPICard
-            title="Total Users"
-            value={kpis.totalUsers.toLocaleString()}
-            subtitle={`${kpis.totalVendors} vendors`}
-            icon={FiUsers}
-            iconBg="bg-orange-50"
-            iconColor="text-orange-600"
-            href="/admin/users"
+            title="Pending Orders"
+            value={kpis.pendingOrders}
+            subtitle="Awaiting confirmation or pickup"
+            icon={FiClock}
+            iconBg="bg-amber-50"
+            iconColor="text-amber-600"
+            href="/customer/orders?status=pending"
+          />
+          <KPICard
+            title="Outstanding Amount"
+            value={formatCurrency(kpis.totalUnpaid)}
+            subtitle={`${kpis.unpaidCount} unpaid invoice${kpis.unpaidCount !== 1 ? 's' : ''}`}
+            icon={FiFileText}
+            iconBg={kpis.totalUnpaid > 0 ? "bg-orange-50" : "bg-gray-50"}
+            iconColor={kpis.totalUnpaid > 0 ? "text-orange-600" : "text-gray-500"}
+            href="/customer/invoices"
+          />
+          <KPICard
+            title="Total Spent"
+            value={formatCurrency(kpis.totalSpent)}
+            subtitle="Lifetime rental value"
+            icon={FiTrendingUp}
+            iconBg="bg-blue-50"
+            iconColor="text-blue-600"
           />
         </div>
 
@@ -451,8 +458,8 @@ const AdminDashboard = () => {
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/50">
                         <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Order ID</th>
-                        <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Customer</th>
-                        <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 hidden md:table-cell">Date</th>
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Items</th>
+                        <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 hidden md:table-cell">Period</th>
                         <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Status</th>
                         <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4">Amount</th>
                         <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-3 px-4 w-12"></th>
@@ -465,23 +472,22 @@ const AdminDashboard = () => {
                             <span className="text-sm font-medium text-gray-900">{order.orderNumber}</span>
                           </td>
                           <td className="py-3.5 px-4">
-                            <div>
-                              <span className="text-sm font-medium text-gray-900">{order.customer?.name}</span>
-                              <p className="text-xs text-gray-500">{order.customer?.email}</p>
-                            </div>
+                            <span className="text-sm text-gray-600 truncate block max-w-[180px]">{getProductSummary(order.items)}</span>
                           </td>
                           <td className="py-3.5 px-4 hidden md:table-cell">
-                            <span className="text-sm text-gray-500">{formatDate(order.createdAt)}</span>
+                            <span className="text-sm text-gray-500">
+                              {formatDate(order.rentalPeriod?.startDate)} — {formatDate(order.rentalPeriod?.endDate)}
+                            </span>
                           </td>
                           <td className="py-3.5 px-4">
                             <StatusBadge status={order.status} />
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            <span className="text-sm font-medium text-gray-900">{formatCurrency(order.pricing?.total)}</span>
+                            <span className="text-sm font-medium text-gray-900">{formatCurrency(order.totalAmount)}</span>
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <button
-                              onClick={() => navigate(`/admin/orders/${order._id}`)}
+                              onClick={() => navigate(`/customer/orders/${order._id}`)}
                               className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
                             >
                               <FiEye className="w-4 h-4" />
@@ -494,7 +500,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/30">
                   <Link
-                    to="/admin/orders"
+                    to="/customer/orders"
                     className="text-sm font-medium text-gray-600 hover:text-gray-900 inline-flex items-center gap-1"
                   >
                     View all orders
@@ -506,59 +512,69 @@ const AdminDashboard = () => {
               <EmptyState
                 icon={FiPackage}
                 title="No orders yet"
-                description="Orders will appear here once customers start renting"
+                description="Start renting equipment to see your orders here"
+                action={{ label: 'Browse Catalog', href: '/customer/products' }}
               />
             )}
           </div>
 
           {/* Right Sidebar */}
           <div className="space-y-6">
-            {/* Orders by Status Card */}
+            {/* Upcoming Returns Card */}
             <div className="bg-white border border-gray-200 rounded-lg">
               <div className="px-4 py-4 border-b border-gray-100">
-                <h2 className="text-base font-semibold text-gray-900">Orders by Status</h2>
+                <h2 className="text-base font-semibold text-gray-900">Upcoming Returns</h2>
               </div>
-              <div className="divide-y divide-gray-100">
-                {[
-                  { status: 'pending', count: kpis.pendingOrders, icon: FiClock, color: 'text-amber-500' },
-                  { status: 'active', count: kpis.activeRentals, icon: FiPackage, color: 'text-emerald-500' },
-                  { status: 'completed', count: orders.filter(o => o.status === 'completed').length, icon: FiCheckCircle, color: 'text-green-500' },
-                  { status: 'cancelled', count: orders.filter(o => o.status === 'cancelled').length, icon: FiAlertCircle, color: 'text-red-500' },
-                ].map((item, idx) => (
-                  <div key={idx} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <item.icon className={`w-4 h-4 ${item.color}`} />
-                      <span className="text-sm font-medium text-gray-700 capitalize">{item.status}</span>
-                    </div>
-                    <span className="text-sm font-semibold text-gray-900">{item.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Pending Vendor Approvals Card */}
-            <div className="bg-white border border-gray-200 rounded-lg">
-              <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h2 className="text-base font-semibold text-gray-900">Vendor Requests</h2>
-                <Link to="/admin/users" className="text-xs font-medium text-gray-500 hover:text-gray-700">
-                  View all
-                </Link>
-              </div>
-              {vendorRequests.length > 0 ? (
+              {upcomingReturns.length > 0 ? (
                 <div className="divide-y divide-gray-100">
-                  {vendorRequests.map((vendor) => (
-                    <div key={vendor._id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  {upcomingReturns.map((item, idx) => (
+                    <div key={idx} className="px-4 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">{vendor.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{vendor.email}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{item.product}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{item.orderId}</p>
                       </div>
-                      <span className="text-xs text-gray-400">{formatDate(vendor.submittedAt)}</span>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm text-gray-900">{formatDate(item.returnDate)}</p>
+                        <p className={`text-xs font-medium ${item.daysLeft === 0 ? 'text-amber-600' : item.daysLeft <= 2 ? 'text-orange-600' : 'text-gray-500'}`}>
+                          {item.daysLeft === 0 ? 'Due today' : `${item.daysLeft} days left`}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="px-4 py-8 text-center">
-                  <p className="text-sm text-gray-500">No pending requests</p>
+                  <p className="text-sm text-gray-500">No upcoming returns</p>
+                </div>
+              )}
+            </div>
+
+            {/* Recent Invoices Card */}
+            <div className="bg-white border border-gray-200 rounded-lg">
+              <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-gray-900">Recent Invoices</h2>
+                <Link to="/customer/invoices" className="text-xs font-medium text-gray-500 hover:text-gray-700">
+                  View all
+                </Link>
+              </div>
+              {invoices.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {invoices.slice(0, 4).map((invoice) => (
+                    <div key={invoice._id} className="px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-900">{invoice.invoiceNumber}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Due {formatDate(invoice.dueDate)}</p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <StatusBadge status={invoice.status} />
+                        <span className="text-sm font-medium text-gray-900">{formatCurrency(invoice.amount)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm text-gray-500">No invoices yet</p>
                 </div>
               )}
             </div>
@@ -570,10 +586,10 @@ const AdminDashboard = () => {
               </div>
               <div className="p-2">
                 {[
-                  { label: 'Manage Users', icon: FiUsers, href: '/admin/users' },
-                  { label: 'View Products', icon: FiPackage, href: '/admin/products' },
-                  { label: 'View Invoices', icon: FiFileText, href: '/admin/invoices' },
-                  { label: 'Settings', icon: FiSettings, href: '/admin/settings' },
+                  { label: 'Browse Equipment', icon: FiGrid, href: '/customer/products' },
+                  { label: 'View My Orders', icon: FiPackage, href: '/customer/orders' },
+                  { label: 'Payment History', icon: FiFileText, href: '/customer/invoices' },
+                  { label: 'View Cart', icon: FiShoppingBag, href: '/customer/cart' },
                 ].map((action, idx) => (
                   <Link
                     key={idx}
@@ -590,11 +606,11 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Secondary Section - Platform Stats */}
+        {/* Secondary Section - Activity Summary */}
         <div className="mt-8">
           <SectionHeader
-            title="Platform Overview"
-            subtitle="Key metrics for your rental marketplace"
+            title="Rental History Summary"
+            subtitle="Your rental activity over time"
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="bg-white border border-gray-200 rounded-lg p-5">
@@ -602,16 +618,16 @@ const AdminDashboard = () => {
                 <span className="text-sm font-medium text-gray-500">This Month</span>
                 <span className="text-xs text-gray-400">Jan 2026</span>
               </div>
-              <p className="text-2xl font-semibold text-gray-900">{formatCurrency(125000)}</p>
-              <p className="text-xs text-gray-500 mt-1">45 orders completed</p>
+              <p className="text-2xl font-semibold text-gray-900">{formatCurrency(23100)}</p>
+              <p className="text-xs text-gray-500 mt-1">3 orders placed</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-5">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm font-medium text-gray-500">Last Month</span>
                 <span className="text-xs text-gray-400">Dec 2025</span>
               </div>
-              <p className="text-2xl font-semibold text-gray-900">{formatCurrency(98000)}</p>
-              <p className="text-xs text-gray-500 mt-1">38 orders completed</p>
+              <p className="text-2xl font-semibold text-gray-900">{formatCurrency(24000)}</p>
+              <p className="text-xs text-gray-500 mt-1">1 order completed</p>
             </div>
             <div className="bg-white border border-gray-200 rounded-lg p-5">
               <div className="flex items-center justify-between mb-4">
@@ -619,7 +635,7 @@ const AdminDashboard = () => {
                 <span className="text-xs text-gray-400">All time</span>
               </div>
               <p className="text-2xl font-semibold text-gray-900">{formatCurrency(12960)}</p>
-              <p className="text-xs text-gray-500 mt-1">Based on {kpis.totalOrders} orders</p>
+              <p className="text-xs text-gray-500 mt-1">Based on {orders.length} orders</p>
             </div>
           </div>
         </div>
@@ -628,4 +644,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default CustomerDashboard;
