@@ -61,21 +61,39 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+          <div className="absolute -bottom-8 left-20 w-72 h-72 bg-violet-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+        </div>
+        {/* Grid Pattern Overlay */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+      </div>
+
+      <div className="max-w-md w-full relative z-10">
+        <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 p-8 animate-fade-in">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <div className="w-12 h-12 bg-gray-900 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-xl">R</span>
+            </div>
+          </div>
+          
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-500 mt-2">Join our rental marketplace</p>
+            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Create account</h1>
+            <p className="text-gray-500 mt-1.5 text-sm">Join our rental marketplace today</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Full name
               </label>
               <div className="relative">
-                <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
                   name="name"
@@ -89,11 +107,11 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Email address
               </label>
               <div className="relative">
-                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="email"
                   name="email"
@@ -107,11 +125,11 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Phone Number
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Phone number
               </label>
               <div className="relative">
-                <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FiPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="tel"
                   name="phone"
@@ -124,7 +142,7 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 I want to
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -133,8 +151,8 @@ const Register = () => {
                   onClick={() => setFormData({ ...formData, role: 'customer' })}
                   className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                     formData.role === 'customer'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      ? 'border-gray-900 bg-gray-50 text-gray-900'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   Rent Products
@@ -144,8 +162,8 @@ const Register = () => {
                   onClick={() => setFormData({ ...formData, role: 'vendor' })}
                   className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                     formData.role === 'vendor'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      ? 'border-gray-900 bg-gray-50 text-gray-900'
+                      : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   List Products
@@ -154,11 +172,11 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -171,19 +189,19 @@ const Register = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
+                  {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password
+              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                Confirm password
               </label>
               <div className="relative">
-                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="confirmPassword"
@@ -196,19 +214,19 @@ const Register = () => {
               </div>
             </div>
 
-            <div className="flex items-start">
+            <div className="flex items-start pt-1">
               <input
                 type="checkbox"
                 required
-                className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-2 focus:ring-gray-900 focus:ring-offset-0 transition-colors"
               />
-              <label className="ml-2 text-sm text-gray-600">
+              <label className="ml-2 text-xs text-gray-600 leading-relaxed">
                 I agree to the{' '}
-                <Link to="/terms" className="text-blue-600 hover:text-blue-700">
+                <Link to="/terms" className="text-gray-900 hover:text-gray-700 font-medium transition-colors">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy" className="text-blue-600 hover:text-blue-700">
+                <Link to="/privacy" className="text-gray-900 hover:text-gray-700 font-medium transition-colors">
                   Privacy Policy
                 </Link>
               </label>
@@ -217,20 +235,20 @@ const Register = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary py-3 flex items-center justify-center"
+              className="w-full btn-primary h-11 flex items-center justify-center"
             >
               {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="spinner" />
               ) : (
-                'Create Account'
+                'Create account'
               )}
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/login" className="text-gray-900 hover:text-gray-700 font-medium transition-colors">
                 Sign in
               </Link>
             </p>

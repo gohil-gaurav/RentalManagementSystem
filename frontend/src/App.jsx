@@ -9,6 +9,7 @@ import { ProtectedRoute, AdminRoutes, VendorRoutes, CustomerRoutes } from './rou
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import LandingPage from './pages/LandingPage';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 function App() {
   const dispatch = useDispatch();
@@ -95,6 +96,9 @@ function App() {
           
           {/* Landing Page */}
           <Route path="/" element={<LandingPage />} />
+          
+          {/* Terms & Conditions */}
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           
           {/* Fallback redirect */}
           <Route path="/*" element={<Navigate to="/" replace />} />

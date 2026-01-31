@@ -556,6 +556,26 @@ const MyOrders = () => {
           </div>
         )}
       </div>
+
+      {/* Terms & Conditions Footer */}
+      <div className="text-center py-4 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          By placing an order, you agree to our{' '}
+          <Link
+            to="/terms-and-conditions"
+            className="text-gray-900 font-medium hover:text-gray-700 underline transition-colors"
+          >
+            Terms & Conditions
+          </Link>
+          {' '}and{' '}
+          <Link
+            to="/privacy-policy"
+            className="text-gray-900 font-medium hover:text-gray-700 underline transition-colors"
+          >
+            Privacy Policy
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };
