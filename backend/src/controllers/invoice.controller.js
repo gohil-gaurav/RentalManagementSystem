@@ -125,14 +125,21 @@ exports.getInvoice = async (req, res) => {
   }
 };
 
-// @desc    Get customer invoices
+// @desc    Get customer invoices (only combined customer invoices)
 // @route   GET /api/invoices/my-invoices
 // @access  Private/Customer
 exports.getMyInvoices = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
 
-    const query = { customer: req.user.id };
+    // Show only customer-type invoices (combined invoices)
+    const query = { 
+      customer: req.user.id,
+      $or: [
+        { invoiceType: 'customer' },
+        { invoiceType: { $exists: false } } // Backward compatibility for old invoices
+      ]
+    };
     if (status) query.status = status;
 
     const invoices = await Invoice.find(query)
@@ -161,14 +168,21 @@ exports.getMyInvoices = async (req, res) => {
   }
 };
 
-// @desc    Get vendor invoices
+// @desc    Get vendor invoices (only vendor-specific invoices)
 // @route   GET /api/invoices/vendor-invoices
 // @access  Private/Vendor
 exports.getVendorInvoices = async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
 
-    const query = { vendor: req.user.id };
+    // Show only vendor-type invoices (individual vendor invoices)
+    const query = { 
+      vendor: req.user.id,
+      $or: [
+        { invoiceType: 'vendor' },
+        { invoiceType: { $exists: false } } // Backward compatibility for old invoices
+      ]
+    };
     if (status) query.status = status;
 
     const invoices = await Invoice.find(query)

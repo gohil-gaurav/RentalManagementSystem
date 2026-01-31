@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_URL = '/api/orders';
 
-// Create order (Customer)
+// Create order (Customer) - supports multi-vendor checkout
 const createOrder = async (orderData, token) => {
   const config = {
     headers: {
@@ -10,7 +10,8 @@ const createOrder = async (orderData, token) => {
     },
   };
   const response = await axios.post(API_URL, orderData, config);
-  return response.data.data;
+  // Response now includes data (order/orders), invoices, and summary
+  return response.data;
 };
 
 // Get customer orders

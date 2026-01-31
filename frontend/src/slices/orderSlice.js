@@ -6,6 +6,8 @@ const initialState = {
   order: null,
   stats: null,
   pagination: null,
+  lastOrderInvoices: null, // Store invoices from multi-vendor checkout
+  lastOrderSummary: null,  // Store summary from multi-vendor checkout
   isLoading: false,
   isSuccess: false,
   isError: false,
@@ -165,18 +167,27 @@ const orderSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Create Order
+      // Create Order (supports multi-vendor checkout)
       .addCase(createOrder.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(createOrder.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.order = action.payload;
-        // Also add to orders list so it shows up immediately
-        if (action.payload) {
-          state.orders = [action.payload, ...state.orders];
+        // Handle both single order and multi-order responses
+        const orderData = action.payload.data;
+        if (Array.isArray(orderData)) {
+          // Multi-vendor: add all orders to the list
+          state.order = orderData[0]; // Set first order as current
+          state.orders = [...orderData, ...state.orders];
+        } else {
+          // Single vendor: handle as before
+          state.order = orderData;
+          state.orders = [orderData, ...state.orders];
         }
+        // Store invoice info if present
+        state.lastOrderInvoices = action.payload.invoices;
+        state.lastOrderSummary = action.payload.summary;
       })
       .addCase(createOrder.rejected, (state, action) => {
         state.isLoading = false;

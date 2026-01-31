@@ -6,6 +6,11 @@ const orderSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  // Batch ID to link orders from same multi-vendor checkout
+  batchId: {
+    type: String,
+    index: true
+  },
   // Multi-tenant: Company this order belongs to (optional for backward compatibility)
   company: {
     type: mongoose.Schema.Types.ObjectId,
