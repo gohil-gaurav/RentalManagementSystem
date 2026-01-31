@@ -1,20 +1,23 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Invoice = require('../models/Invoice');
 const reservationService = require('../services/reservation.service');
 const pricingService = require('../services/pricing.service');
 
-// @desc    Create order
+// @desc    Create order (supports multi-vendor checkout)
 // @route   POST /api/orders
 // @access  Private/Customer
 exports.createOrder = async (req, res) => {
   try {
     const { items, rentalPeriod, deliveryMethod, deliveryAddress, notes } = req.body;
 
-    // Validate items and check availability
-    const orderItems = [];
-    let subtotal = 0;
-    let totalDeposit = 0;
-    let vendorId = null;
+    // Calculate rental duration
+    const duration = Math.ceil(
+      (new Date(rentalPeriod.endDate) - new Date(rentalPeriod.startDate)) / (1000 * 60 * 60 * 24)
+    ) || 1;
+
+    // Group items by vendor
+    const vendorItemsMap = new Map();
 
     for (const item of items) {
       const product = await Product.findById(item.productId);
@@ -25,99 +28,216 @@ exports.createOrder = async (req, res) => {
         });
       }
 
-      // Set vendor (all items must be from same vendor in this MVP)
-      if (!vendorId) {
-        vendorId = product.vendor;
-      } else if (product.vendor.toString() !== vendorId.toString()) {
-        return res.status(400).json({
-          success: false,
-          message: 'All items must be from the same vendor'
+      const vendorKey = product.vendor.toString();
+      
+      if (!vendorItemsMap.has(vendorKey)) {
+        vendorItemsMap.set(vendorKey, {
+          vendorId: product.vendor,
+          companyId: product.company,
+          items: [],
+          subtotal: 0,
+          totalDeposit: 0
         });
       }
 
-      // Check availability
-      const availability = await reservationService.checkAvailability(
-        item.productId,
-        new Date(rentalPeriod.startDate),
-        new Date(rentalPeriod.endDate),
-        item.quantity
-      );
-
-      if (!availability.isAvailable) {
-        return res.status(400).json({
-          success: false,
-          message: `Product ${product.name} is not available for the selected dates`
-        });
-      }
-
-      // Calculate pricing
-      const duration = Math.ceil(
-        (new Date(rentalPeriod.endDate) - new Date(rentalPeriod.startDate)) / (1000 * 60 * 60 * 24)
-      );
+      // Calculate pricing for this item
       const itemPrice = pricingService.calculateRentalPrice(product.pricing, duration, item.quantity);
 
-      orderItems.push({
+      vendorItemsMap.get(vendorKey).items.push({
         product: item.productId,
+        productName: product.name,
         quantity: item.quantity,
         pricePerDay: product.pricing.daily,
-        totalPrice: itemPrice
+        totalPrice: itemPrice,
+        deposit: (product.pricing.securityDeposit || 0) * item.quantity
       });
 
-      subtotal += itemPrice;
-      totalDeposit += product.pricing.securityDeposit * item.quantity;
+      vendorItemsMap.get(vendorKey).subtotal += itemPrice;
+      vendorItemsMap.get(vendorKey).totalDeposit += (product.pricing.securityDeposit || 0) * item.quantity;
     }
 
-    // Calculate tax (10%)
-    const tax = subtotal * 0.1;
-    const total = subtotal + tax + totalDeposit;
+    // Create orders and invoices for each vendor
+    const createdOrders = [];
+    const vendorInvoices = [];
+    let customerInvoiceItems = [];
+    let customerSubtotal = 0;
+    let customerTotalDeposit = 0;
+    let customerTax = 0;
+    let customerTotal = 0;
+    let firstOrderId = null;
 
-    // Create order
-    const order = await Order.create({
-      customer: req.user.id,
-      vendor: vendorId,
-      items: orderItems,
-      rentalPeriod: {
-        startDate: rentalPeriod.startDate,
-        endDate: rentalPeriod.endDate,
-        duration: Math.ceil(
-          (new Date(rentalPeriod.endDate) - new Date(rentalPeriod.startDate)) / (1000 * 60 * 60 * 24)
-        ),
-        durationType: 'days'
-      },
-      pricing: {
-        subtotal,
-        securityDeposit: totalDeposit,
-        tax,
-        total
-      },
-      deliveryMethod,
-      deliveryAddress,
-      notes: { customer: notes },
-      timeline: [{ status: 'pending', note: 'Order created' }]
-    });
+    // Generate a batch ID to link all orders from this checkout
+    const batchId = `BATCH-${Date.now()}`;
 
-    // Create reservations
-    for (const item of orderItems) {
-      await reservationService.createReservation({
-        product: item.product,
+    for (const [vendorKey, vendorData] of vendorItemsMap) {
+      const { vendorId, companyId, items: vendorItems, subtotal, totalDeposit } = vendorData;
+
+      // Calculate tax (10%)
+      const tax = subtotal * 0.1;
+      const total = subtotal + tax + totalDeposit;
+
+      // Generate order number
+      const orderCount = await Order.countDocuments();
+      const orderNumber = `ORD-${Date.now()}-${orderCount + 1}`;
+
+      // Create order for this vendor
+      const order = await Order.create({
+        orderNumber,
+        batchId, // Link orders from same checkout
+        customer: req.user.id,
+        vendor: vendorId,
+        company: companyId,
+        items: vendorItems.map(item => ({
+          product: item.product,
+          quantity: item.quantity,
+          pricePerDay: item.pricePerDay,
+          totalPrice: item.totalPrice
+        })),
+        rentalPeriod: {
+          startDate: rentalPeriod.startDate,
+          endDate: rentalPeriod.endDate,
+          duration,
+          durationType: 'days'
+        },
+        pricing: {
+          subtotal,
+          securityDeposit: totalDeposit,
+          tax,
+          total
+        },
+        status: 'confirmed',
+        paymentStatus: 'paid',
+        deliveryMethod,
+        deliveryAddress,
+        notes: { customer: notes },
+        timeline: [
+          { status: 'confirmed', note: 'Order placed successfully' },
+          { status: 'paid', note: 'Payment completed' }
+        ]
+      });
+
+      if (!firstOrderId) firstOrderId = order._id;
+
+      // Create vendor-specific invoice
+      const vendorInvoiceCount = await Invoice.countDocuments();
+      const vendorInvoiceNumber = `INV-V-${Date.now()}-${vendorInvoiceCount + 1}`;
+
+      const vendorInvoiceItems = vendorItems.map(item => ({
+        description: `${item.productName} (${item.quantity} x ${duration} days)`,
+        quantity: item.quantity,
+        unitPrice: item.pricePerDay,
+        totalPrice: item.totalPrice
+      }));
+
+      if (totalDeposit > 0) {
+        vendorInvoiceItems.push({
+          description: 'Security Deposit (Refundable)',
+          quantity: 1,
+          unitPrice: totalDeposit,
+          totalPrice: totalDeposit
+        });
+      }
+
+      const vendorInvoice = await Invoice.create({
+        invoiceNumber: vendorInvoiceNumber,
+        invoiceType: 'vendor', // Mark as vendor invoice
         order: order._id,
         customer: req.user.id,
-        quantity: item.quantity,
-        startDate: rentalPeriod.startDate,
-        endDate: rentalPeriod.endDate
+        vendor: vendorId,
+        company: companyId,
+        items: vendorInvoiceItems,
+        amounts: {
+          subtotal,
+          tax,
+          discount: 0,
+          securityDeposit: totalDeposit,
+          total,
+          amountPaid: total,
+          amountDue: 0
+        },
+        status: 'paid',
+        dueDate: new Date(),
+        paidDate: new Date(),
+        payments: [{
+          amount: total,
+          method: 'card',
+          date: new Date(),
+          transactionId: `PAY-V-${Date.now()}-${vendorKey.substring(0, 8)}`
+        }]
       });
+
+      vendorInvoices.push(vendorInvoice);
+
+      // Accumulate for customer invoice
+      customerInvoiceItems = customerInvoiceItems.concat(vendorInvoiceItems);
+      customerSubtotal += subtotal;
+      customerTotalDeposit += totalDeposit;
+      customerTax += tax;
+      customerTotal += total;
+
+      // Populate and add to created orders
+      const populatedOrder = await Order.findById(order._id)
+        .populate('customer', 'name email phone')
+        .populate('vendor', 'name vendorInfo.businessName')
+        .populate('items.product', 'name images');
+
+      createdOrders.push(populatedOrder);
     }
 
-    const populatedOrder = await Order.findById(order._id)
-      .populate('customer', 'name email phone')
-      .populate('vendor', 'name vendorInfo.businessName')
-      .populate('items.product', 'name images');
+    // Create a single combined customer invoice
+    const customerInvoiceCount = await Invoice.countDocuments();
+    const customerInvoiceNumber = `INV-C-${Date.now()}-${customerInvoiceCount + 1}`;
+
+    // Get the first vendor for the customer invoice (we'll use the first order's vendor)
+    const firstVendorData = vendorItemsMap.values().next().value;
+
+    const customerInvoice = await Invoice.create({
+      invoiceNumber: customerInvoiceNumber,
+      invoiceType: 'customer', // Mark as customer invoice
+      batchId, // Link to the batch
+      order: firstOrderId, // Reference first order
+      customer: req.user.id,
+      vendor: firstVendorData.vendorId, // Required field, use first vendor
+      company: firstVendorData.companyId,
+      items: customerInvoiceItems,
+      amounts: {
+        subtotal: customerSubtotal,
+        tax: customerTax,
+        discount: 0,
+        securityDeposit: customerTotalDeposit,
+        total: customerTotal,
+        amountPaid: customerTotal,
+        amountDue: 0
+      },
+      status: 'paid',
+      dueDate: new Date(),
+      paidDate: new Date(),
+      payments: [{
+        amount: customerTotal,
+        method: 'card',
+        date: new Date(),
+        transactionId: `PAY-C-${Date.now()}`
+      }],
+      notes: `Combined invoice for ${createdOrders.length} vendor order(s)`
+    });
 
     res.status(201).json({
       success: true,
-      data: populatedOrder
+      message: `Successfully created ${createdOrders.length} order(s) from ${vendorItemsMap.size} vendor(s)`,
+      data: createdOrders.length === 1 ? createdOrders[0] : createdOrders,
+      invoices: {
+        customer: customerInvoice,
+        vendors: vendorInvoices
+      },
+      summary: {
+        totalOrders: createdOrders.length,
+        totalVendors: vendorItemsMap.size,
+        totalAmount: customerTotal,
+        batchId
+      }
     });
   } catch (error) {
+    console.error('Order creation error:', error);
     res.status(500).json({
       success: false,
       message: error.message
@@ -170,11 +290,18 @@ exports.getVendorOrders = async (req, res) => {
     const { status, page = 1, limit = 10 } = req.query;
 
     const query = { vendor: req.user.id };
+    
+    // Scope by company if available
+    if (req.companyId) {
+      query.company = req.companyId;
+    }
+    
     if (status) query.status = status;
 
     const orders = await Order.find(query)
       .populate('customer', 'name email phone')
       .populate('items.product', 'name images')
+      .populate('company', 'name slug')
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .sort({ createdAt: -1 });

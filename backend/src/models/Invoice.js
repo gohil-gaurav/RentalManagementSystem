@@ -6,6 +6,23 @@ const invoiceSchema = new mongoose.Schema({
     unique: true,
     required: true
   },
+  // Invoice type: 'vendor' for individual vendor invoices, 'customer' for combined customer invoice
+  invoiceType: {
+    type: String,
+    enum: ['vendor', 'customer'],
+    default: 'vendor'
+  },
+  // Batch ID to link all invoices from same multi-vendor checkout
+  batchId: {
+    type: String,
+    index: true
+  },
+  // Multi-tenant: Company this invoice belongs to (optional for backward compatibility)
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    index: true
+  },
   order: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
