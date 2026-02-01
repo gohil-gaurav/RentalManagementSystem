@@ -257,6 +257,14 @@ exports.updateInvoiceStatus = async (req, res) => {
 // @access  Private/Customer
 exports.processPayment = async (req, res) => {
   try {
+    // Check if Stripe is configured
+    if (!stripe) {
+      return res.status(503).json({
+        success: false,
+        message: 'Payment service is not configured. Please contact support.'
+      });
+    }
+
     const { paymentMethodId, amount } = req.body;
 
     const invoice = await Invoice.findById(req.params.id);
@@ -340,6 +348,14 @@ exports.processPayment = async (req, res) => {
 // @access  Private/Customer
 exports.createPaymentIntent = async (req, res) => {
   try {
+    // Check if Stripe is configured
+    if (!stripe) {
+      return res.status(503).json({
+        success: false,
+        message: 'Payment service is not configured. Please contact support.'
+      });
+    }
+
     const invoice = await Invoice.findById(req.params.id);
 
     if (!invoice) {

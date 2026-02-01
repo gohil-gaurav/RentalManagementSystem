@@ -59,7 +59,7 @@ const OTPLogin = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/request-otp', {
+      const response = await axios.post('/api/auth/request-otp', {
         email: email.toLowerCase()
       });
 
@@ -131,7 +131,7 @@ const OTPLogin = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', {
+      const response = await axios.post('/api/auth/verify-otp', {
         email: email.toLowerCase(),
         otp: otpCode
       });
@@ -176,7 +176,7 @@ const OTPLogin = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/resend-otp', {
+      const response = await axios.post('/api/auth/resend-otp', {
         email: email.toLowerCase()
       });
 
