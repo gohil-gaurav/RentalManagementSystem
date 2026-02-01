@@ -257,30 +257,17 @@ const Register = () => {
                 />
               </div>
 
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="terms" className="ml-2 text-sm text-gray-600">
-                I agree to the{' '}
-                <Link to="/terms" className="text-blue-600 hover:text-blue-700">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-blue-600 hover:text-blue-700">
-                  Privacy Policy
               {/* Terms checkbox */}
               <div className="flex items-start gap-2 pt-1">
                 <input
                   type="checkbox"
+                  id="terms"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
                   required
                   className="mt-1 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                 />
-                <label className="text-xs text-gray-500">
+                <label htmlFor="terms" className="text-xs text-gray-500">
                   I agree to the{' '}
                   <Link to="/terms" className="text-gray-900 hover:text-black underline">
                     Terms of Service

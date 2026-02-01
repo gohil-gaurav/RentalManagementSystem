@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { clearPendingVerification } from '../../slices/authSlice';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -105,7 +105,7 @@ const VerifyEmail = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post(`${API_URL}/api/email-verification/verify`, {
+      const response = await axios.post(`${API_URL}/email-verification/verify`, {
         email,
         code
       });
@@ -141,7 +141,7 @@ const VerifyEmail = () => {
     setSuccess('');
 
     try {
-      const response = await axios.post(`${API_URL}/api/email-verification/resend`, {
+      const response = await axios.post(`${API_URL}/email-verification/resend`, {
         email
       });
 
