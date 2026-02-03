@@ -11,6 +11,7 @@ import Register from './pages/auth/Register';
 import VerifyEmail from './pages/auth/VerifyEmail';
 import OTPLogin from './pages/auth/OTPLogin';
 import LandingPage from './pages/LandingPage';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 function App() {
   const dispatch = useDispatch();
@@ -125,6 +126,9 @@ function App() {
           
           {/* Landing Page */}
           <Route path="/" element={<LandingPage />} />
+          
+          {/* Terms & Conditions */}
+          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           
           {/* Fallback redirect */}
           <Route path="/*" element={<Navigate to="/" replace />} />
